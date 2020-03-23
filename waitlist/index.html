@@ -1,0 +1,90 @@
+{% verbatim %}
+<!Doctype HTML>
+<html>
+  <head>
+  <!-- development version, includes helpful console warnings -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+  <div id="app">
+    {{ message }}<br>
+    <input name="uname" ref="username" placeholder="username"><br>
+    <input name = "refLink" ref = "refNumber" placeholder="Insert Reference Number"><br>
+
+    <button v-on:click="signup">SignUp</button>
+    Number of people in the waitlist: {{ waitlist_length }}<br>
+    {{linkNumber}}<br>
+    {{ error }}
+
+  </div>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+          message: 'Hello Vue!',
+          waitlist_length: 0,
+          username: '',
+          linkNumber: '',
+          error: ''
+      },
+      created() {
+        let vm = this
+        axios.get('/rest/waitlist').then(function(response){
+          vm.waitlist_length = response.data.waitlist_length;
+
+        });
+      },
+      methods: {
+        // function signup that sanitizes user input, runs a get request to /rest/signup in order
+        // to communicated with the backend and submit username/reference values to the database
+        signup : function (){
+          let vm = this
+          this.username = this.$refs.username.value;
+           this.refNumber= this.$refs.refNumber.value;
+
+          if (!vm.username.match(/^[0-9a-z]+$/i)){
+            vm.error = "ERROR: Please input alphanumeric characters only";
+            return;
+          }
+          if (vm.refNumber != '' && !vm.refNumber.match(/^[0-9a-z]+$/i)){
+            vm.error = "ERROR: Please input alphanumeric characters only";
+            return;
+          }
+          if (vm.refNumber.length !=  12){
+            vm.error = "ERROR: Please input a 12 character reference number";
+          }
+
+
+          axios.get('/rest/signup', {
+            params: {
+              uname: vm.username,
+              refNumber: vm.refNumber
+            }
+            })
+            .then(function (response) {
+              // callback function to populate variables on the html page with values from the backend
+              vm.waitlist_length = response.data.waitlist_length;
+              vm.linkNumber = response.data.linkNumber;
+              vm.error = response.data.error;
+
+
+
+            })
+            .catch(function (error) {
+              console.log("error", error);
+            });
+          // get request to populate the number of people in line after every processing request
+          axios.get('/rest/waitlist').then(function(response){
+            vm.waitlist_length = response.data.waitlist_length;
+          });
+
+
+        }
+      }
+    })
+  </script>
+  </body>
+</html>
+{% endverbatim %}
